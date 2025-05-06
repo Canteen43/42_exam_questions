@@ -1,1 +1,25 @@
 Small project to test the skeleton for "polyset"
+
+Core take-aways:
+- Make SAB and STB final
+- Use dynamic casting for set ctor and dtor
+- For constructors: Call all base constructors.
+- For destructors: Call nothing.
+- Both also work automatically.
+
+Order in exam:
+- Add SAB
+	- class
+	- has()
+- Add STB
+	- class
+	- has()
+- Add Set
+	- class
+	- dynamic cast ctor
+	- dynamic cast dtor
+	- functions
+- Add canonical form if necessary
+	- SAB
+	- STB
+	- Set
