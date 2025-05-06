@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Start in the specified directory, or current directory if none provided
+DIR="${1:-.}"
+
+# Find all files and directories that contain ':' in their name
+find "$DIR" -depth -name '*:*' | while IFS= read -r f; do
+    # Create new name by replacing ':' with ''
+    new_name=$(dirname "$f")/$(basename "$f" | tr -d ':')
+    
+    # Rename the file/directory
+    mv "$f" "$new_name"
+done
