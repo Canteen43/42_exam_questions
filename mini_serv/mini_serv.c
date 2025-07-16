@@ -9,7 +9,7 @@
 // System call errors are intentionally ignored
 
 // Client struct
-struct client
+struct socket
 {
 	int	fd;
 	int	id;
@@ -17,11 +17,13 @@ struct client
 
 // Shared variables are global for simplicity
 char buf[20000];
-int server_fd;
-int nbr_clients = 0;
+int arr_size = 0;
 int next_client_id = 0;
-struct pollfd* poll_fds = NULL;
-struct client* clients = NULL;
+struct pollfd* poll_arr = NULL;
+struct socket* socket_arr = NULL;
+
+
+
 
 void print_buf(int fd)
 {
@@ -30,50 +32,10 @@ void print_buf(int fd)
 
 void send_buf()
 {
-	for (int i = 0; i < nbr_clients; ++i)
+	for (int i = 0; i < arr_size; ++i)
 	{
-		write(clients[i].fd, buf, strlen(buf));
+		write(socket_arr[i].fd, buf, strlen(buf));
 	}
-}
-
-void add_to_poll(int fd)
-{
-	poll_fds = realloc(poll_fds, sizeof(struct pollfd) * (nbr_clients + 1));
-	poll_fds[nbr_clients].fd = fd;
-	poll_fds[nbr_clients].events = POLLIN;
-	poll_fds[nbr_clients].revents = 0;
-}
-
-void remove_from_poll(int fd)
-{
-	// Find the index of the fd to remove
-	int index;
-	for (int i = 0; i < nbr_clients; ++i)
-	{
-		if (poll_fds[i].fd == fd)
-		{
-			index = i;
-			break;
-		}
-	}
-
-	// Swap the element to remove with the last element
-	poll_fds[index] = poll_fds[nbr_clients];
-
-	// Delete the last element
-	poll_fds = realloc(poll_fds, sizeof(struct pollfd) * (nbr_clients));
-}
-
-int fd_to_id(int fd)
-{
-	for (int i = 0; i < nbr_clients; ++i)
-	{
-		if (clients[i].fd == fd)
-		{
-			return clients[i].id;
-		}
-	}
-	return -1;
 }
 
 void accept_client()
@@ -81,73 +43,58 @@ void accept_client()
 	// Accept new client (address not used but required by function)
 	struct sockaddr_in client_address;
 	socklen_t addr_len = sizeof(client_address);
-	int client_fd = accept(server_fd, (struct sockaddr *)&client_address, &addr_len);
+	int client_fd = accept(socket_arr[0].fd, (struct sockaddr *)&client_address, &addr_len);
 
 	// Set client id
 	int client_id = next_client_id;
 	++next_client_id;
 
-	// Increase client count and array size
-	nbr_clients++;
-	clients = realloc(clients, sizeof(struct client) * nbr_clients);
+	// Increase array size and add client to arrays
+	++arr_size;
 
-	// Add new client to array
-	clients[nbr_clients - 1].fd = client_fd;
-	clients[nbr_clients - 1].id = client_id;
+	socket_arr = realloc(socket_arr, sizeof(struct socket) * arr_size);
+	socket_arr[arr_size - 1].fd = client_fd;
+	socket_arr[arr_size - 1].id = client_id;
 
-	// Add new client to poll
-	add_to_poll(client_fd);
+	poll_arr = realloc(poll_arr, sizeof(struct pollfd) * arr_size);
+	poll_arr[arr_size - 1].fd = client_fd;
+	poll_arr[arr_size - 1].events = POLLIN;
+	poll_arr[arr_size - 1].revents = 0;
 
 	// Prepare and send message
 	sprintf(buf, "New Client connected: %d\n", client_id);
 	send_buf();
 }
 
-void remove_client(int client_id)
-{
-	// Find client index and fd
-	int client_index;
-	int client_fd;
-	for (int i = 0; i < nbr_clients; ++i)
-	{
-		if (clients[i].id == client_id)
-		{
-			client_index = i;
-			client_fd = clients[i].fd;
-			break;
-		}
-	}
-
-	// Close the client's socket
-	close(clients[client_index].fd);
-
-	// Remove client from poll
-	remove_from_poll(client_fd);
-
-	// Remove client from array
-	clients[client_index] = clients[nbr_clients - 1];
-	clients = realloc(clients, sizeof(struct client) * (nbr_clients - 1));
-	nbr_clients--;
-
-	// Send message
-	sprintf(buf, "Client %d disconnected\n", client_id);
-	send_buf();
-}
-
-void handle_client(int client_fd)
+void handle_client(int index)
 {	
-	// Find client id from fd
-	int client_id = fd_to_id(client_fd);
+	// Get client fd and id
+	int client_fd = socket_arr[index].fd;
+	int client_id = socket_arr[index].id;
 	
-	// Before reading add message prefix to buffer
+	// Before reading, add message prefix to buffer
 	sprintf(buf, "Client %d says: ", client_id);
 	
 	// Read message from client
 	int bytes_read = read(client_fd, buf + strlen(buf), sizeof(buf) - strlen(buf));
 	
-	// If read returns 0, client disconnected
+	// If read returns 0, client disconnected and needs to be removed
 	if (bytes_read == 0)
-		remove_client(client_id);
+	{
+		// Close the socket fd
+		close(client_fd);
+
+		// Remove client from arrays by swapping with the last element
+		socket_arr[index] = socket_arr[arr_size - 1];
+		poll_arr[index] = poll_arr[arr_size - 1];
+		--arr_size;
+		socket_arr = realloc(socket_arr, sizeof(struct socket) * arr_size);
+		poll_arr = realloc(poll_arr, sizeof(struct pollfd) * arr_size);
+
+		// Prepare and send message about disconnection
+		sprintf(buf, "Client %d disconnected\n", client_id);
+		send_buf();
+	}
 	// Otherwise, the client sent a message that needs to be broadcast
 	else
 		send_buf();
@@ -166,7 +113,7 @@ int main(int argc, char *argv[])
 	// Prepare listening socket
 	{
 		// Create socket
-		server_fd = socket(AF_INET, SOCK_STREAM, 0);
+		int listening_fd = socket(AF_INET, SOCK_STREAM, 0);
 
 		// Bind socket to port
 		struct sockaddr_in address;
@@ -175,34 +122,43 @@ int main(int argc, char *argv[])
 		address.sin_addr.s_addr = inet_addr("127.0.0.1");
 		address.sin_port = htons(atoi(argv[1]));
 
-		bind(server_fd, (struct sockaddr *)&address, sizeof(address));
+		bind(listening_fd, (struct sockaddr *)&address, sizeof(address));
 
 		// Start listening
-		listen(server_fd, 10);
+		listen(listening_fd, 10);
 
-		// Add server_fd to poll
-		add_to_poll(server_fd);
+		// Add listening socket fd to arrays
+		socket_arr = malloc(sizeof(struct socket));
+		socket_arr[0].fd = listening_fd;
+		socket_arr[0].id = -1;
+
+		poll_arr = malloc(sizeof(struct pollfd));
+		poll_arr[0].fd = listening_fd;
+		poll_arr[0].events = POLLIN;
+		poll_arr[0].revents = 0;
+
+		arr_size = 1;
 	}
 
 	// Server loop
 	while (1)
 	{
 		// Wait until event occurs
-		poll(poll_fds, nbr_clients + 1, -1);
+		poll(poll_arr, arr_size, -1);
 
 		// Check for and accept new client
-		if (poll_fds[0].revents & POLLIN)
+		if (poll_arr[0].revents & POLLIN)
 		{
 			accept_client();
 			continue;
 		}
 
 		// Check for and handle client messages
-		for (int i = 1; i <= nbr_clients; ++i)
+		for (int i = 1; i <= arr_size; ++i)
 		{
-			if (poll_fds[i].revents & POLLIN)
+			if (poll_arr[i].revents & POLLIN)
 			{
-				handle_client(poll_fds[i].fd);
+				handle_client(i);
 				continue;
 			}
 		}
