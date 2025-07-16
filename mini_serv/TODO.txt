@@ -1,0 +1,1 @@
+- set up poll for printing client to see, if it receives the server messages
