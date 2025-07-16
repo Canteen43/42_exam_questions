@@ -14,6 +14,7 @@ struct socket
 {
 	int	fd;
 	int	id;
+			
 };
 
 // Shared variables are global for simplicity
