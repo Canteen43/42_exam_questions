@@ -1,6 +1,6 @@
 # 42 Exam Questions
 
-A collection of 42 school exam exercises including ft_popen (process management), polyset (set operations), sandbox (system calls), and vect2 (vector operations).
+A collection of 42 school exam exercises including ft_popen, polyset, sandbox, vect2, and mini_serv.
 
 ## Overview
 
@@ -20,19 +20,12 @@ Function testing framework
 ### vect2
 C++ operator overloading for 2D vector class
 
-## Structure
-
-```
-exam_questions/
-├── ft_popen/
-├── polyset/
-├── sandbox/
-└── vect2/
-```
+### mini_serv
+Minimal Server in C
 
 ## Compilation
 
-Each exercise must be compiled individually.
+Each exercise must be compiled individually. Some might still need main functions.
 
 ---
 
