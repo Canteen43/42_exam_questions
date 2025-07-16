@@ -5,6 +5,8 @@ A collection of 42 school exam exercises including ft_popen, polyset, sandbox, v
 ## Overview
 
 This repository contains my solutions to various 42 school exam questions covering fundamental programming concepts.
+The exercises come with strict requirements. Functions that would make the exercise "easy" are mostly forbidden.
+The exact wording of the exercises is not included because they are long and only available during exams where copying them is not allowed.
 
 ## Exercises
 
