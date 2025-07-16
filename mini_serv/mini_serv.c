@@ -28,14 +28,16 @@ struct socket* socket_arr = NULL;
 
 void print_buf(int fd)
 {
-	write(fd, buf, strlen(buf));
+	int dummy = write(fd, buf, strlen(buf));
+	(void)dummy;
 }
 
 void send_buf()
 {
 	for (int i = 0; i < arr_size; ++i)
 	{
-		write(socket_arr[i].fd, buf, strlen(buf));
+		int dummy = write(socket_arr[i].fd, buf, strlen(buf));
+		(void)dummy;
 	}
 }
 
