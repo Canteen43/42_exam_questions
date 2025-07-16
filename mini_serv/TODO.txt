@@ -1,0 +1,3 @@
+- Refactor client list to also include server socket
+	- then each client will have an index that is the same in poll_array and socket_array
+- Work with array size for both client and poll_fd?
