@@ -5,6 +5,7 @@
 #include <sys/socket.h>	// defines socket(), AF_INET, SOCK_STREAM, etc.
 #include <arpa/inet.h>	// for inet_addr(), htons()
 #include <poll.h>		// for poll()
+#include <stdlib.h>		// realloc()
 
 // System call errors are intentionally ignored
 
@@ -64,6 +65,10 @@ void accept_client()
 	// Prepare and send message
 	sprintf(buf, "New Client connected: %d\n", client_id);
 	send_buf();
+	
+	// Log for debugging
+	sprintf(buf, "[mini_serv] Accepted client connection: ID: %d, FD: %d\n", client_id, client_fd);
+	print_buf(0);
 }
 
 void handle_client(int index)
@@ -94,10 +99,20 @@ void handle_client(int index)
 		// Prepare and send message about disconnection
 		sprintf(buf, "Client %d disconnected\n", client_id);
 		send_buf();
+	
+		// Log for debugging
+		sprintf(buf, "[mini_serv] Client disconnected: ID: %d, FD: %d\n", client_id, client_fd);
+		print_buf(0);
 	}
 	// Otherwise, the client sent a message that needs to be broadcast
 	else
+	{
 		send_buf();
+
+		// Log for debugging
+		sprintf(buf, "[mini_serv] Broadcasted client message: ID: %d, FD: %d\n", client_id, client_fd);
+		print_buf(0);
+	}
 }
 
 int main(int argc, char *argv[])
@@ -105,7 +120,7 @@ int main(int argc, char *argv[])
 	// Check nbr of args
 	if (argc < 2)
 	{
-		sprintf(buf, "Wrong number of args\n", argv[0]);
+		sprintf(buf, "Wrong number of args\n");
 		print_buf(2);
 		return 1;
 	}
