@@ -1,1 +1,5 @@
-- set up poll for printing client to see, if it receives the server messages
+- refactor mini_serv
+	- use printf for things debug
+	- don't exit on send_error, log it instead
+- normal test
+- stress test

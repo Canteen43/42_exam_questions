@@ -6,6 +6,7 @@
 #include <arpa/inet.h>	// for inet_addr(), htons()
 #include <poll.h>		// for poll()
 #include <stdlib.h>		// realloc()
+#include <errno.h>		// for errno
 
 // System call errors are intentionally ignored
 // Print statements with "[mini_serv]" prefix are for debugging purposes
@@ -50,9 +51,14 @@ void send_buf()
 {
 	for (int i = 1; i < arr_size; ++i)
 	{
-		return_value = write(socket_arr[i].fd, buf, strlen(buf));
-		if (return_value == -1)
+		return_value = send(socket_arr[i].fd, buf, strlen(buf), MSG_NOSIGNAL);
+		if (return_value == -1 && errno == EPIPE)
 		{
+			printf("[mini_serv] send() returned EPIPE, skipping that client\n");
+		}
+		else if (return_value == -1)
+		{
+			perror("send");
 			exit_fatal(__FUNCTION__, "Write error\n");
 		}
 	}
@@ -96,12 +102,11 @@ void accept_client()
 
 	
 	// Prepare and send message
-	sprintf(buf, "New Client connected: %d\n", client_id);
+	sprintf(buf, "New Client connected: %d", client_id);
 	send_buf();
 	
 	// Log for debugging
-	sprintf(buf, "[mini_serv] Accepted client connection: ID: %d, FD: %d\n", client_id, client_fd);
-	print_buf(0);
+	printf("[mini_serv] Accepted client connection: ID: %d, FD: %d\n", client_id, client_fd);
 }
 
 void handle_client(int index)
@@ -112,9 +117,10 @@ void handle_client(int index)
 	
 	// Before reading, add message prefix to buffer
 	sprintf(buf, "Client %d says: ", client_id);
+	int prefix_length = strlen(buf);
 	
 	// Read message from client
-	return_value = read(client_fd, buf + strlen(buf), sizeof(buf) - strlen(buf));
+	return_value = read(client_fd, buf + prefix_length, sizeof(buf) - prefix_length - 1);
 	if (return_value == -1)
 	{
 		exit_fatal(__FUNCTION__, "Read error");
@@ -146,21 +152,20 @@ void handle_client(int index)
 		}
 
 		// Prepare and send message about disconnection
-		sprintf(buf, "Client %d disconnected\n", client_id);
+		sprintf(buf, "Client %d disconnected", client_id);
 		send_buf();
 	
 		// Log for debugging
-		sprintf(buf, "[mini_serv] Client disconnected: ID: %d, FD: %d\n", client_id, client_fd);
-		print_buf(0);
+		printf("[mini_serv] Client disconnected: ID: %d, FD: %d\n", client_id, client_fd);
 	}
 	// Otherwise, the client sent a message that needs to be broadcast
 	else
 	{
+		buf[prefix_length + return_value] = '\0';
 		send_buf();
 
 		// Log for debugging
-		sprintf(buf, "[mini_serv] Broadcasted client message: ID: %d, FD: %d\n", client_id, client_fd);
-		print_buf(0);
+		printf("[mini_serv] Broadcasted client message: ID: %d, FD: %d\n", client_id, client_fd);
 	}
 }
 
@@ -224,8 +229,7 @@ int main(int argc, char *argv[])
 		arr_size = 1;
 
 		// Log for debugging
-		sprintf(buf, "[mini_serv] Server listening on: %s\n", argv[1]);
-		print_buf(0);
+		printf("[mini_serv] Server listening on: %s\n", argv[1]);
 	}
 
 
