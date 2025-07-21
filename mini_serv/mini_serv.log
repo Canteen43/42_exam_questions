@@ -1,0 +1,15 @@
+Server listening on: 8080
+Accepted client connection: ID: 0, FD: 5
+Client disconnected: ID: 0, FD: 5
+Accepted client connection: ID: 1, FD: 5
+Received message from client. ID: 1, FD: 5, Message: "hello: 1"
+Broadcasted client message: ID: 1, FD: 5, Message: "Client 1 says: hello"
+Client disconnected: ID: 1, FD: 5
+Accepted client connection: ID: 2, FD: 5
+Received message from client. ID: 2, FD: 5, Message: "hello: 2"
+Broadcasted client message: ID: 2, FD: 5, Message: "Client 2 says: hello"
+Client disconnected: ID: 2, FD: 5
+Accepted client connection: ID: 3, FD: 5
+Client disconnected: ID: 3, FD: 5
+Accepted client connection: ID: 4, FD: 5
+Client disconnected: ID: 4, FD: 5

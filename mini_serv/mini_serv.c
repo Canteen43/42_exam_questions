@@ -17,6 +17,10 @@
 // Irrelevant errors are deliberately ignored.
 // printf() is added for debugging.
 
+// Signal handling:
+// The exercise forbids signal handling.
+// Therefore, the program has to be terminated with Ctrl+C and resources cannot be freed.
+
 // Client struct
 struct socket
 {
@@ -31,6 +35,7 @@ int arr_size = 0;
 int next_client_id = 0;
 struct pollfd* poll_arr = NULL;
 struct socket* socket_arr = NULL;
+FILE* logfile;
 
 
 void exit_fatal()
@@ -50,7 +55,8 @@ void send_buf()
 	{
 		return_value = send(socket_arr[i].fd, buf, strlen(buf), MSG_NOSIGNAL);
 		// if (return_value == -1)
-		// 	printf("[mini_serv] send() failed with errno: %d, %s\n", errno, strerror(errno));
+		// 	fprintf(logfile, "send() failed with errno: %d, %s\n", errno, strerror(errno));
+		// 	fflush(logfile);
 	}
 }
 
@@ -62,7 +68,8 @@ void accept_client()
 	return_value = accept(socket_arr[0].fd, (struct sockaddr *)&client_address, &addr_len);
 	if (return_value == -1)
 	{
-		printf("[mini_serv] Accept error\n");
+		fprintf(logfile, "Accept error\n");
+		fflush(logfile);
 		exit_fatal();
 	}
 	int client_fd = return_value;
@@ -77,7 +84,8 @@ void accept_client()
 	socket_arr = realloc(socket_arr, sizeof(struct socket) * arr_size);
 	if (socket_arr == NULL)
 	{
-		printf("[mini_serv] Memory allocation error for socket_arr\n");
+		fprintf(logfile, "Memory allocation error for socket_arr\n");
+		fflush(logfile);
 		exit_fatal();
 	}
 	socket_arr[arr_size - 1].fd = client_fd;
@@ -86,7 +94,8 @@ void accept_client()
 	poll_arr = realloc(poll_arr, sizeof(struct pollfd) * arr_size);
 	if (poll_arr == NULL)
 	{
-		printf("[mini_serv] Memory allocation error for poll_arr\n");
+		fprintf(logfile, "Memory allocation error for poll_arr\n");
+		fflush(logfile);
 		exit_fatal();
 	}
 	poll_arr[arr_size - 1].fd = client_fd;
@@ -99,7 +108,8 @@ void accept_client()
 	send_buf();
 	
 	// Log for debugging
-	printf("[mini_serv] Accepted client connection: ID: %d, FD: %d\n", client_id, client_fd);
+	fprintf(logfile, "Accepted client connection: ID: %d, FD: %d\n", client_id, client_fd);
+	fflush(logfile);
 }
 
 void handle_client(int index)
@@ -115,7 +125,8 @@ void handle_client(int index)
 	return_value = read(client_fd, buf + prefix_length, sizeof(buf) - prefix_length - 1);
 	if (return_value == -1)
 	{
-		printf("[mini_serv] Read error for client %d\n", client_id);
+		fprintf(logfile, "Read error for client %d\n", client_id);
+		fflush(logfile);
 		exit_fatal();
 	}
 	
@@ -126,7 +137,8 @@ void handle_client(int index)
 		return_value = close(client_fd);
 		if (return_value == -1)
 		{
-			printf("[mini_serv] Close error for client %d\n", client_id);
+			fprintf(logfile, "Close error for client %d\n", client_id);
+			fflush(logfile);
 		}
 
 		// Remove client from arrays by swapping with the last element
@@ -136,13 +148,15 @@ void handle_client(int index)
 		socket_arr = realloc(socket_arr, sizeof(struct socket) * arr_size);
 		if (socket_arr == NULL)
 		{
-			printf("[mini_serv] Memory allocation error for socket_arr\n");
+			fprintf(logfile, "Memory allocation error for socket_arr\n");
+			fflush(logfile);
 			exit_fatal();
 		}
 		poll_arr = realloc(poll_arr, sizeof(struct pollfd) * arr_size);
 		if (poll_arr == NULL)
 		{
-			printf("[mini_serv] Memory allocation error for poll_arr\n");
+			fprintf(logfile, "Memory allocation error for poll_arr\n");
+			fflush(logfile);
 			exit_fatal();
 		}
 
@@ -151,16 +165,23 @@ void handle_client(int index)
 		send_buf();
 	
 		// Log for debugging
-		printf("[mini_serv] Client disconnected: ID: %d, FD: %d\n", client_id, client_fd);
+		fprintf(logfile, "Client disconnected: ID: %d, FD: %d\n", client_id, client_fd);
+		fflush(logfile);
 	}
 	// Otherwise, the client sent a message that needs to be broadcast
 	else
 	{
+		// Log for debugging
+		fprintf(logfile, "Received message from client. ID: %d, FD: %d, Message: \"%s\"\n", 
+			client_id, client_fd, buf + prefix_length);
+		fflush(logfile);
+		
 		buf[prefix_length + return_value] = '\0';
 		send_buf();
 
 		// Log for debugging
-		printf("[mini_serv] Broadcasted client message: ID: %d, FD: %d, Message: %s\n", client_id, client_fd, buf);
+		fprintf(logfile, "Broadcasted client message: ID: %d, FD: %d, Message: \"%s\"\n", client_id, client_fd, buf);
+		fflush(logfile);
 	}
 }
 
@@ -173,13 +194,18 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	// Prepare log file
+	remove("mini_serv.log");
+	logfile = fopen("mini_serv.log", "a");
+
 	// Prepare listening socket
 	{
 		// Create socket
 		int listening_fd = socket(AF_INET, SOCK_STREAM, 0);
 		if (listening_fd == -1)
 		{
-			printf("[mini_serv] Socket creation error\n");
+			fprintf(logfile, "Socket creation error\n");
+			fflush(logfile);
 			exit_fatal();
 		}
 
@@ -193,7 +219,8 @@ int main(int argc, char *argv[])
 		return_value = bind(listening_fd, (struct sockaddr *)&address, sizeof(address));
 		if (return_value == -1)
 		{
-			printf("[mini_serv] Bind error\n");
+			fprintf(logfile, "Bind error\n");
+			fflush(logfile);
 			exit_fatal();
 		}
 
@@ -201,7 +228,8 @@ int main(int argc, char *argv[])
 		return_value = listen(listening_fd, 10);
 		if (return_value == -1)
 		{
-			printf("[mini_serv] Listen error\n");
+			fprintf(logfile, "Listen error\n");
+			fflush(logfile);
 			exit_fatal();
 		}
 
@@ -209,7 +237,8 @@ int main(int argc, char *argv[])
 		socket_arr = malloc(sizeof(struct socket));
 		if (socket_arr == NULL)
 		{
-			printf("[mini_serv] Memory allocation error for socket_arr\n");
+			fprintf(logfile, "Memory allocation error for socket_arr\n");
+			fflush(logfile);
 			exit_fatal();
 		}
 		socket_arr[0].fd = listening_fd;
@@ -218,7 +247,8 @@ int main(int argc, char *argv[])
 		poll_arr = malloc(sizeof(struct pollfd));
 		if (poll_arr == NULL)
 		{
-			printf("[mini_serv] Memory allocation error for poll_arr\n");
+			fprintf(logfile, "Memory allocation error for poll_arr\n");
+			fflush(logfile);
 			exit_fatal();
 		}
 		poll_arr[0].fd = listening_fd;
@@ -228,7 +258,8 @@ int main(int argc, char *argv[])
 		arr_size = 1;
 
 		// Log for debugging
-		printf("[mini_serv] Server listening on: %s\n", argv[1]);
+		fprintf(logfile, "Server listening on: %s\n", argv[1]);
+		fflush(logfile);
 	}
 
 
@@ -239,7 +270,8 @@ int main(int argc, char *argv[])
 		return_value = poll(poll_arr, arr_size, -1);
 		if (return_value == -1)
 		{
-			printf("[mini_serv] Poll error\n");
+			fprintf(logfile, "Poll error\n");
+			fflush(logfile);
 			exit_fatal();
 		}
 
