@@ -17,6 +17,7 @@ all: $(BINS)
 # Clean up all binaries
 clean:
 	rm -f $(BINS)
+	rm -f *.log
 
 # Clean and rebuild everything
 re: clean all
