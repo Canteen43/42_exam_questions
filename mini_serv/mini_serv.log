@@ -1,15 +1,37 @@
-Server listening on: 8080
+Set up concluded. Server listening on: 8080
 Accepted client connection: ID: 0, FD: 5
+	Broadcasted message: "New Client connected: 0". Note that reception by client is not guaranteed
+Received message from client. ID: 0, FD: 5, Message: "hello: 0"
+	Broadcasted message: "Client 0 says: hello". Note that reception by client is not guaranteed
 Client disconnected: ID: 0, FD: 5
+	Broadcasted message: "Client 0 disconnected". Note that reception by client is not guaranteed
 Accepted client connection: ID: 1, FD: 5
+	Broadcasted message: "New Client connected: 1". Note that reception by client is not guaranteed
 Received message from client. ID: 1, FD: 5, Message: "hello: 1"
-Broadcasted client message: ID: 1, FD: 5, Message: "Client 1 says: hello"
+	Broadcasted message: "Client 1 says: hello". Note that reception by client is not guaranteed
 Client disconnected: ID: 1, FD: 5
+	Broadcasted message: "Client 1 disconnected". Note that reception by client is not guaranteed
 Accepted client connection: ID: 2, FD: 5
-Received message from client. ID: 2, FD: 5, Message: "hello: 2"
-Broadcasted client message: ID: 2, FD: 5, Message: "Client 2 says: hello"
+	Broadcasted message: "New Client connected: 2". Note that reception by client is not guaranteed
 Client disconnected: ID: 2, FD: 5
+	Broadcasted message: "Client 2 disconnected". Note that reception by client is not guaranteed
 Accepted client connection: ID: 3, FD: 5
+	Broadcasted message: "New Client connected: 3". Note that reception by client is not guaranteed
 Client disconnected: ID: 3, FD: 5
+	Broadcasted message: "Client 3 disconnected". Note that reception by client is not guaranteed
 Accepted client connection: ID: 4, FD: 5
+	Broadcasted message: "New Client connected: 4". Note that reception by client is not guaranteed
 Client disconnected: ID: 4, FD: 5
+	Broadcasted message: "Client 4 disconnected". Note that reception by client is not guaranteed
+Accepted client connection: ID: 5, FD: 5
+	Broadcasted message: "New Client connected: 5". Note that reception by client is not guaranteed
+Client disconnected: ID: 5, FD: 5
+	Broadcasted message: "Client 5 disconnected". Note that reception by client is not guaranteed
+Accepted client connection: ID: 6, FD: 5
+	Broadcasted message: "New Client connected: 6". Note that reception by client is not guaranteed
+Client disconnected: ID: 6, FD: 5
+	Broadcasted message: "Client 6 disconnected". Note that reception by client is not guaranteed
+Accepted client connection: ID: 7, FD: 5
+	Broadcasted message: "New Client connected: 7". Note that reception by client is not guaranteed
+Client disconnected: ID: 7, FD: 5
+	Broadcasted message: "Client 7 disconnected". Note that reception by client is not guaranteed

@@ -58,6 +58,8 @@ void send_buf()
 		// 	fprintf(logfile, "send() failed with errno: %d, %s\n", errno, strerror(errno));
 		// 	fflush(logfile);
 	}
+	fprintf(logfile, "\tBroadcasted message: \"%s\". Note that reception by client is not guaranteed\n", buf);
+	fflush(logfile);
 }
 
 void accept_client()
@@ -102,14 +104,13 @@ void accept_client()
 	poll_arr[arr_size - 1].events = POLLIN;
 	poll_arr[arr_size - 1].revents = 0;
 
-	
-	// Prepare and send message
-	sprintf(buf, "New Client connected: %d", client_id);
-	send_buf();
-	
 	// Log for debugging
 	fprintf(logfile, "Accepted client connection: ID: %d, FD: %d\n", client_id, client_fd);
 	fflush(logfile);
+
+	// Prepare and send message
+	sprintf(buf, "New Client connected: %d", client_id);
+	send_buf();
 }
 
 void handle_client(int index)
@@ -160,13 +161,13 @@ void handle_client(int index)
 			exit_fatal();
 		}
 
-		// Prepare and send message about disconnection
-		sprintf(buf, "Client %d disconnected", client_id);
-		send_buf();
-	
 		// Log for debugging
 		fprintf(logfile, "Client disconnected: ID: %d, FD: %d\n", client_id, client_fd);
 		fflush(logfile);
+
+		// Prepare and send message about disconnection
+		sprintf(buf, "Client %d disconnected", client_id);
+		send_buf();	
 	}
 	// Otherwise, the client sent a message that needs to be broadcast
 	else
@@ -178,10 +179,6 @@ void handle_client(int index)
 		
 		buf[prefix_length + return_value] = '\0';
 		send_buf();
-
-		// Log for debugging
-		fprintf(logfile, "Broadcasted client message: ID: %d, FD: %d, Message: \"%s\"\n", client_id, client_fd, buf);
-		fflush(logfile);
 	}
 }
 
@@ -258,7 +255,7 @@ int main(int argc, char *argv[])
 		arr_size = 1;
 
 		// Log for debugging
-		fprintf(logfile, "Server listening on: %s\n", argv[1]);
+		fprintf(logfile, "Set up concluded. Server listening on port %s\n", argv[1]);
 		fflush(logfile);
 	}
 
