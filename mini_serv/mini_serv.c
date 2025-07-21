@@ -58,6 +58,8 @@ void send_buf()
 		// 	fprintf(logfile, "send() failed with errno: %d, %s\n", errno, strerror(errno));
 		// 	fflush(logfile);
 	}
+
+	// Log the broadcast message without its newline
 	fprintf(logfile, "\tBroadcasted message: \"%.*s\"\n", (int)strlen(buf) - 1, buf);
 	fflush(logfile);
 }
@@ -70,7 +72,7 @@ void accept_client()
 	return_value = accept(socket_arr[0].fd, (struct sockaddr *)&client_address, &addr_len);
 	if (return_value == -1)
 	{
-		fprintf(logfile, "Accept error\n");
+		fprintf(logfile, "[Error] Context: accept() failed, Description: %s\n", strerror(errno));
 		fflush(logfile);
 		exit_fatal();
 	}
@@ -86,7 +88,7 @@ void accept_client()
 	socket_arr = realloc(socket_arr, sizeof(struct socket) * arr_size);
 	if (socket_arr == NULL)
 	{
-		fprintf(logfile, "Memory allocation error for socket_arr\n");
+		fprintf(logfile, "[Error] Context: realloc for socket_arr, Description: %s\n", strerror(errno));
 		fflush(logfile);
 		exit_fatal();
 	}
@@ -96,7 +98,7 @@ void accept_client()
 	poll_arr = realloc(poll_arr, sizeof(struct pollfd) * arr_size);
 	if (poll_arr == NULL)
 	{
-		fprintf(logfile, "Memory allocation error for poll_arr\n");
+		fprintf(logfile, "[Error] Context: realloc for poll_arr, Description: %s\n", strerror(errno));
 		fflush(logfile);
 		exit_fatal();
 	}
@@ -126,7 +128,7 @@ void handle_client(int index)
 	return_value = read(client_fd, buf + prefix_length, sizeof(buf) - prefix_length - 1);
 	if (return_value == -1)
 	{
-		fprintf(logfile, "Read error for client %d\n", client_id);
+		fprintf(logfile, "[Error] Context: read() failed, Description: %s\n", strerror(errno));
 		fflush(logfile);
 		exit_fatal();
 	}
@@ -138,7 +140,7 @@ void handle_client(int index)
 		return_value = close(client_fd);
 		if (return_value == -1)
 		{
-			fprintf(logfile, "Close error for client %d\n", client_id);
+			fprintf(logfile, "[Error] Context: close() failed, Description: %s\n", strerror(errno));
 			fflush(logfile);
 		}
 
@@ -149,14 +151,14 @@ void handle_client(int index)
 		socket_arr = realloc(socket_arr, sizeof(struct socket) * arr_size);
 		if (socket_arr == NULL)
 		{
-			fprintf(logfile, "Memory allocation error for socket_arr\n");
+			fprintf(logfile, "[Fatal Error] Context: realloc for socket_arr, Description: %s\n", strerror(errno));
 			fflush(logfile);
 			exit_fatal();
 		}
 		poll_arr = realloc(poll_arr, sizeof(struct pollfd) * arr_size);
 		if (poll_arr == NULL)
 		{
-			fprintf(logfile, "Memory allocation error for poll_arr\n");
+			fprintf(logfile, "[Fatal Error] Context: realloc for poll_arr, Description: %s\n", strerror(errno));
 			fflush(logfile);
 			exit_fatal();
 		}
@@ -173,10 +175,10 @@ void handle_client(int index)
 	else
 	{
 		// Log for debugging
-		fprintf(logfile, "Received message from client. ID: %d, FD: %d, Message: \"%s\"\n", 
-			client_id, client_fd, buf + prefix_length);
+		fprintf(logfile, "Received message from client. ID: %d, FD: %d, Message: \"%.*s\"\n",
+			client_id, client_fd, return_value, buf + prefix_length);
 		fflush(logfile);
-		
+
 		buf[prefix_length + return_value] = '\n';
 		buf[prefix_length + return_value + 1] = '\0';
 		send_buf();
@@ -202,7 +204,7 @@ int main(int argc, char *argv[])
 		int listening_fd = socket(AF_INET, SOCK_STREAM, 0);
 		if (listening_fd == -1)
 		{
-			fprintf(logfile, "Socket creation error\n");
+			fprintf(logfile, "[Fatal Error] Context: socket() failed, Description: %s\n", strerror(errno));
 			fflush(logfile);
 			exit_fatal();
 		}
@@ -217,7 +219,7 @@ int main(int argc, char *argv[])
 		return_value = bind(listening_fd, (struct sockaddr *)&address, sizeof(address));
 		if (return_value == -1)
 		{
-			fprintf(logfile, "Bind error\n");
+			fprintf(logfile, "[Fatal Error] Context: bind() failed, Description: %s\n", strerror(errno));
 			fflush(logfile);
 			exit_fatal();
 		}
@@ -226,7 +228,7 @@ int main(int argc, char *argv[])
 		return_value = listen(listening_fd, 10);
 		if (return_value == -1)
 		{
-			fprintf(logfile, "Listen error\n");
+			fprintf(logfile, "[Fatal Error] Context: listen() failed, Description: %s\n", strerror(errno));
 			fflush(logfile);
 			exit_fatal();
 		}
@@ -235,7 +237,7 @@ int main(int argc, char *argv[])
 		socket_arr = malloc(sizeof(struct socket));
 		if (socket_arr == NULL)
 		{
-			fprintf(logfile, "Memory allocation error for socket_arr\n");
+			fprintf(logfile, "[Fatal Error] Context: malloc for socket_arr, Description: %s\n", strerror(errno));
 			fflush(logfile);
 			exit_fatal();
 		}
@@ -245,7 +247,7 @@ int main(int argc, char *argv[])
 		poll_arr = malloc(sizeof(struct pollfd));
 		if (poll_arr == NULL)
 		{
-			fprintf(logfile, "Memory allocation error for poll_arr\n");
+			fprintf(logfile, "[Fatal Error] Context: malloc for poll_arr, Description: %s\n", strerror(errno));
 			fflush(logfile);
 			exit_fatal();
 		}
@@ -268,7 +270,7 @@ int main(int argc, char *argv[])
 		return_value = poll(poll_arr, arr_size, -1);
 		if (return_value == -1)
 		{
-			fprintf(logfile, "Poll error\n");
+			fprintf(logfile, "[Fatal Error] Context: poll() failed, Description: %s\n", strerror(errno));
 			fflush(logfile);
 			exit_fatal();
 		}

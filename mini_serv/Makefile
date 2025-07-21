@@ -1,6 +1,6 @@
 # Compiler and flags
-CC = gcc
-CFLAGS = -Wall -Wextra -O2
+CC = cc
+CFLAGS = -Wall -Wextra -Werror
 
 # Find all C files in the current directory
 SRCS = $(wildcard *.c)

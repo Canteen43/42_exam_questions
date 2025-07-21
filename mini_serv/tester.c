@@ -60,8 +60,8 @@ int main()
 	char buf[100];
 	for (int i = 0; i < NBR_TEST_CLIENTS; ++i)
 	{
-		sprintf(buf, "Hello from client %d", i);
-		ret = send(client_fd_arr[i], buf, strlen(buf), 0);
+		ret = sprintf(buf, "Hello from client %d", i);
+		ret = send(client_fd_arr[i], buf, ret, 0);
 		if (ret == -1)
 		{
 			fprintf(logfile, "[Error] Context: sending message from client %d, Description: %s\n", i, strerror(errno));

@@ -9,6 +9,7 @@ This project implements a minimal chat server using TCP sockets and the `poll()`
 ## Files
 
 - `mini_serv.c` - Main server implementation
+- `micro_serv.c` - Like mini_serv.c but without error checks (faster in exam)
 - `tester.c` - Test client program that creates multiple connections and sends messages
 - `Makefile` - Build configuration for compiling the server and tester
 - `mini_serv.log` - Server log file (generated during runtime)

@@ -1,1 +1,0 @@
-- find out why received message log is printed with newline
