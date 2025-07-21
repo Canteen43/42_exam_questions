@@ -4,5 +4,4 @@
 # Except these files
 !.gitignore
 !Makefile
-!TODO.txt
 !*.c
