@@ -58,7 +58,7 @@ void send_buf()
 		// 	fprintf(logfile, "send() failed with errno: %d, %s\n", errno, strerror(errno));
 		// 	fflush(logfile);
 	}
-	fprintf(logfile, "\tBroadcasted message: \"%s\". Note that reception by client is not guaranteed\n", buf);
+	fprintf(logfile, "\tBroadcasted message: \"%s\". Note that reception by all clients is not guaranteed\n", buf);
 	fflush(logfile);
 }
 
@@ -109,7 +109,7 @@ void accept_client()
 	fflush(logfile);
 
 	// Prepare and send message
-	sprintf(buf, "New Client connected: %d", client_id);
+	sprintf(buf, "New Client connected: %d\n", client_id);
 	send_buf();
 }
 
@@ -166,7 +166,7 @@ void handle_client(int index)
 		fflush(logfile);
 
 		// Prepare and send message about disconnection
-		sprintf(buf, "Client %d disconnected", client_id);
+		sprintf(buf, "Client %d disconnected\n", client_id);
 		send_buf();	
 	}
 	// Otherwise, the client sent a message that needs to be broadcast
@@ -177,7 +177,8 @@ void handle_client(int index)
 			client_id, client_fd, buf + prefix_length);
 		fflush(logfile);
 		
-		buf[prefix_length + return_value] = '\0';
+		buf[prefix_length + return_value] = '\n';
+		buf[prefix_length + return_value + 1] = '\0';
 		send_buf();
 	}
 }
@@ -255,7 +256,7 @@ int main(int argc, char *argv[])
 		arr_size = 1;
 
 		// Log for debugging
-		fprintf(logfile, "Set up concluded. Server listening on port %s\n", argv[1]);
+		fprintf(logfile, "Setup finished. Server listening on port %s\n", argv[1]);
 		fflush(logfile);
 	}
 
