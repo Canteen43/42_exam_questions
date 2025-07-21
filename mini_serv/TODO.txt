@@ -1,4 +1,1 @@
-- remove broadcast log
-- add sending confirmation to log
-
-- combine clients and make it write to logfile
+- find out why received message log is printed with newline

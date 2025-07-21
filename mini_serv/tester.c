@@ -7,6 +7,7 @@
 #include <poll.h>		// for poll()
 #include <stdlib.h>		// realloc()
 #include <errno.h>		// for errno
+#include <fcntl.h>		// for fcntl()
 
 #define NBR_TEST_CLIENTS 10
 #define PORT 8080
@@ -86,7 +87,9 @@ int main()
 	// Reading the first client socket and printing to the log file
 	fprintf(logfile, "Reading from socket of client 0:\n\"\"\"\n");
 	fflush(logfile);
-	sleep(3); // Give server time to process messages
+	
+	sleep(3);
+	
 	char read_buf[4000];
 	ret = recv(client_fd_arr[0], read_buf, sizeof(read_buf) - 1, 0);
 	if (ret < 0)
@@ -97,30 +100,6 @@ int main()
 	fprintf(logfile, "%.*s\n", ret, read_buf);
 	fprintf(logfile, "\"\"\"\n");
 	fflush(logfile);
-	printf("Return of read: %d\n", ret);
-	// while (1)
-	// {
-	// 	ret = recv(client_fd_arr[0], read_buf, sizeof(read_buf) - 1, 0);
-	// 	if (ret == 0)
-	// 	{
-	// 		fprintf(logfile, "\"\"\"\n");
-	// 		fflush(logfile);
-	// 		fprintf(logfile, "Finished reading from socket\n");
-	// 		fflush(logfile);
-	// 		break;
-	// 	}
-	// 	else if (ret < 0)
-	// 	{
-	// 		fprintf(logfile, "[Error] Context: reading socket, Description: %s\n", strerror(errno));
-	// 		fflush(logfile);
-	// 		break;
-	// 	}
-	// 	else
-	// 	{
-	// 		fprintf(logfile, "%s", read_buf);
-	// 		fflush(logfile);
-	// 	}
-	// }
 
 	// Close the first client socket
 	close(client_fd_arr[0]);

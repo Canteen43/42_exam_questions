@@ -58,7 +58,7 @@ void send_buf()
 		// 	fprintf(logfile, "send() failed with errno: %d, %s\n", errno, strerror(errno));
 		// 	fflush(logfile);
 	}
-	fprintf(logfile, "\tBroadcasted message: \"%s\". Note that reception by all clients is not guaranteed\n", buf);
+	fprintf(logfile, "\tBroadcasted message: \"%.*s\"\n", (int)strlen(buf) - 1, buf);
 	fflush(logfile);
 }
 
@@ -132,7 +132,7 @@ void handle_client(int index)
 	}
 	
 	// If read returns 0, client disconnected and needs to be removed
-	if (return_value == 0)
+	else if (return_value == 0)
 	{
 		// Close the socket fd
 		return_value = close(client_fd);
