@@ -11,6 +11,7 @@
 
 #define NBR_TEST_CLIENTS 10
 #define PORT 8080
+#define TEST_MSG "Hello from client %d\nAnd hello again"
 
 int main()
 {
@@ -60,7 +61,7 @@ int main()
 	char buf[100];
 	for (int i = 0; i < NBR_TEST_CLIENTS; ++i)
 	{
-		ret = sprintf(buf, "Hello from client %d\nAnd hello again", i);
+		ret = sprintf(buf, TEST_MSG, i);
 		ret = send(client_fd_arr[i], buf, ret, 0);
 		if (ret == -1)
 		{

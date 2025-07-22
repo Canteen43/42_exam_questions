@@ -2,9 +2,6 @@
 
 A simple TCP chat server implementation in C that allows multiple clients to connect and broadcast messages to all connected clients.
 
-> ⚠️ **Warning:** This project is still under construction. Features may be incomplete or unstable.
-
-
 ## Overview
 
 This project implements a minimal chat server using TCP sockets and the `poll()` system call for handling multiple clients concurrently. The server listens on a specified port and relays messages from any client to all other connected clients.
@@ -12,7 +9,7 @@ This project implements a minimal chat server using TCP sockets and the `poll()`
 ## Files
 
 - `mini_serv.c` - Main server implementation
-- `micro_serv.c` - Like mini_serv.c but without error checks (faster in exam)
+- `micro_serv.c` - Like mini_serv.c but without error checks and logs (faster in exam)
 - `tester.c` - Test client program that creates multiple connections and sends messages
 - `Makefile` - Build configuration for compiling the server and tester
 - `mini_serv.log` - Server log file (generated during runtime)
@@ -54,6 +51,30 @@ The included tester program can be used to simulate multiple clients:
 
 ```bash
 ./tester
+```
+
+The tester will:
+1. Create 10 simultaneous client connections to port 8080
+2. Send a message from each client
+3. Close 9 connections, leaving one to receive broadcasts
+4. Log all operations to `tester.log`
+
+### Testing with NETCAT
+
+Netcat is also very useful for testing. You can use it like so:
+
+```bash
+nc 127.0.0.1 <PORTNBR>
+```
+
+To test multiline messages, do:
+
+```bash
+nc 127.0.0.1 <PORTNBR> <<EOF
+> your
+> multiline
+> message
+> EOF
 ```
 
 The tester will:

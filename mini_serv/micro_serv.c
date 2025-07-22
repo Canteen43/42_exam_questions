@@ -23,7 +23,6 @@ int arr_size = 0;
 int next_client_id = 0;
 struct pollfd* poll_arr = NULL;
 struct socket* socket_arr = NULL;
-FILE* logfile;
 
 
 void exit_fatal()
@@ -43,14 +42,6 @@ void broadcast(int bytes)
 	{
 		ret = send(socket_arr[i].fd, send_buf, bytes, MSG_NOSIGNAL);
 	}
-
-	// Log the broadcast message without its newline
-	fprintf(logfile, "\tBroadcasted message: \"");
-	if (send_buf[bytes - 1] == '\n')
-		fprintf(logfile, "%.*s\\n\"\n", bytes - 1, send_buf);
-	else
-		fprintf(logfile, "%.*s\"\n", bytes, send_buf);
-	fflush(logfile);
 }
 
 void accept_client()
@@ -59,12 +50,6 @@ void accept_client()
 	struct sockaddr_in client_address;
 	socklen_t addr_len = sizeof(client_address);
 	ret = accept(socket_arr[0].fd, (struct sockaddr *)&client_address, &addr_len);
-	if (ret == -1)
-	{
-		fprintf(logfile, "[Error] Context: accept() failed, Description: %s\n", strerror(errno));
-		fflush(logfile);
-		exit_fatal();
-	}
 	int client_fd = ret;
 
 	// Set client id
@@ -75,29 +60,13 @@ void accept_client()
 	++arr_size;
 
 	socket_arr = realloc(socket_arr, sizeof(struct socket) * arr_size);
-	if (socket_arr == NULL)
-	{
-		fprintf(logfile, "[Error] Context: realloc for socket_arr, Description: %s\n", strerror(errno));
-		fflush(logfile);
-		exit_fatal();
-	}
 	socket_arr[arr_size - 1].fd = client_fd;
 	socket_arr[arr_size - 1].id = client_id;
 
 	poll_arr = realloc(poll_arr, sizeof(struct pollfd) * arr_size);
-	if (poll_arr == NULL)
-	{
-		fprintf(logfile, "[Error] Context: realloc for poll_arr, Description: %s\n", strerror(errno));
-		fflush(logfile);
-		exit_fatal();
-	}
 	poll_arr[arr_size - 1].fd = client_fd;
 	poll_arr[arr_size - 1].events = POLLIN;
 	poll_arr[arr_size - 1].revents = 0;
-
-	// Log for debugging
-	fprintf(logfile, "Accepted client connection: ID: %d, FD: %d\n", client_id, client_fd);
-	fflush(logfile);
 
 	// Prepare and send message
 	ret = sprintf(send_buf, "New Client connected: %d\n", client_id);
@@ -112,46 +81,19 @@ void handle_client(int index)
 	
 	// Read message from client
 	ret = recv(client_fd, msg_src, sizeof(msg_src) - 1, 0);
-	if (ret == -1)
-	{
-		fprintf(logfile, "[Error] Context: recv() failed, Description: %s\n", strerror(errno));
-		fflush(logfile);
-		exit_fatal();
-	}
 	
 	// If read returns 0, client disconnected and needs to be removed
-	else if (ret == 0)
+	if (ret == 0)
 	{
 		// Close the socket fd
 		ret = close(client_fd);
-		if (ret == -1)
-		{
-			fprintf(logfile, "[Error] Context: close() failed, Description: %s\n", strerror(errno));
-			fflush(logfile);
-		}
 
 		// Remove client from arrays by swapping with the last element
 		socket_arr[index] = socket_arr[arr_size - 1];
 		poll_arr[index] = poll_arr[arr_size - 1];
 		--arr_size;
 		socket_arr = realloc(socket_arr, sizeof(struct socket) * arr_size);
-		if (socket_arr == NULL)
-		{
-			fprintf(logfile, "[Fatal Error] Context: realloc for socket_arr, Description: %s\n", strerror(errno));
-			fflush(logfile);
-			exit_fatal();
-		}
 		poll_arr = realloc(poll_arr, sizeof(struct pollfd) * arr_size);
-		if (poll_arr == NULL)
-		{
-			fprintf(logfile, "[Fatal Error] Context: realloc for poll_arr, Description: %s\n", strerror(errno));
-			fflush(logfile);
-			exit_fatal();
-		}
-
-		// Log for debugging
-		fprintf(logfile, "Client disconnected: ID: %d, FD: %d\n", client_id, client_fd);
-		fflush(logfile);
 
 		// Prepare and send message about disconnection
 		ret = sprintf(send_buf, "Client %d disconnected\n", client_id);
@@ -166,11 +108,6 @@ void handle_client(int index)
 		// Adding prefix to the message
 		int prefix_length = sprintf(send_buf, "Client %d says: ", client_id);
 		char *msg_dst = send_buf + prefix_length;
-
-		// Log for debugging
-		fprintf(logfile, "Received message from client. ID: %d, FD: %d, Message:\n\"%.*s\"\n",
-			client_id, client_fd, bytes_read, msg_src);
-		fflush(logfile);
 
 		for (int i = 0, j = 0; i < bytes_read; ++i, ++j)
 		{
@@ -193,20 +130,10 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	// Prepare log file
-	remove("mini_serv.log");
-	logfile = fopen("mini_serv.log", "a");
-
 	// Prepare listening socket
 	{
 		// Create socket
 		int listening_fd = socket(AF_INET, SOCK_STREAM, 0);
-		if (listening_fd == -1)
-		{
-			fprintf(logfile, "[Fatal Error] Context: socket() failed, Description: %s\n", strerror(errno));
-			fflush(logfile);
-			exit_fatal();
-		}
 
 		// Bind socket to port
 		struct sockaddr_in address;
@@ -216,49 +143,21 @@ int main(int argc, char *argv[])
 		address.sin_port = htons(atoi(argv[1]));
 
 		ret = bind(listening_fd, (struct sockaddr *)&address, sizeof(address));
-		if (ret == -1)
-		{
-			fprintf(logfile, "[Fatal Error] Context: bind() failed, Description: %s\n", strerror(errno));
-			fflush(logfile);
-			exit_fatal();
-		}
 
 		// Start listening
 		ret = listen(listening_fd, 10);
-		if (ret == -1)
-		{
-			fprintf(logfile, "[Fatal Error] Context: listen() failed, Description: %s\n", strerror(errno));
-			fflush(logfile);
-			exit_fatal();
-		}
 
 		// Add listening socket fd to arrays
 		socket_arr = malloc(sizeof(struct socket));
-		if (socket_arr == NULL)
-		{
-			fprintf(logfile, "[Fatal Error] Context: malloc for socket_arr, Description: %s\n", strerror(errno));
-			fflush(logfile);
-			exit_fatal();
-		}
 		socket_arr[0].fd = listening_fd;
 		socket_arr[0].id = -1;
 
 		poll_arr = malloc(sizeof(struct pollfd));
-		if (poll_arr == NULL)
-		{
-			fprintf(logfile, "[Fatal Error] Context: malloc for poll_arr, Description: %s\n", strerror(errno));
-			fflush(logfile);
-			exit_fatal();
-		}
 		poll_arr[0].fd = listening_fd;
 		poll_arr[0].events = POLLIN;
 		poll_arr[0].revents = 0;
 
 		arr_size = 1;
-
-		// Log for debugging
-		fprintf(logfile, "Setup finished. Server listening on port %s\n", argv[1]);
-		fflush(logfile);
 	}
 
 
@@ -267,12 +166,6 @@ int main(int argc, char *argv[])
 	{
 		// Wait until event occurs
 		ret = poll(poll_arr, arr_size, -1);
-		if (ret == -1)
-		{
-			fprintf(logfile, "[Fatal Error] Context: poll() failed, Description: %s\n", strerror(errno));
-			fflush(logfile);
-			exit_fatal();
-		}
 
 		// Check for and accept new client
 		if (poll_arr[0].revents & POLLIN)
