@@ -60,7 +60,7 @@ int main()
 	char buf[100];
 	for (int i = 0; i < NBR_TEST_CLIENTS; ++i)
 	{
-		ret = sprintf(buf, "Hello from client %d", i);
+		ret = sprintf(buf, "Hello from client %d\nAnd hello again", i);
 		ret = send(client_fd_arr[i], buf, ret, 0);
 		if (ret == -1)
 		{

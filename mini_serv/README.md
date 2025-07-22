@@ -2,6 +2,9 @@
 
 A simple TCP chat server implementation in C that allows multiple clients to connect and broadcast messages to all connected clients.
 
+> ⚠️ **Warning:** This project is still under construction. Features may be incomplete or unstable.
+
+
 ## Overview
 
 This project implements a minimal chat server using TCP sockets and the `poll()` system call for handling multiple clients concurrently. The server listens on a specified port and relays messages from any client to all other connected clients.

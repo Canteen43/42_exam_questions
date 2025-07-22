@@ -29,8 +29,9 @@ struct socket
 };
 
 // Shared variables are global for simplicity
-char buf[20000];
-int return_value = 0;
+char send_buf[20000];
+char msg_src[20000];
+int ret = 0;
 int arr_size = 0;
 int next_client_id = 0;
 struct pollfd* poll_arr = NULL;
@@ -40,7 +41,7 @@ FILE* logfile;
 
 void exit_fatal()
 {
-	return_value = write(2, "Fatal error\n", 12);
+	ret = write(2, "Fatal error\n", 12);
 	for (int i = 0; i < arr_size; ++i)
 	{
 		if (socket_arr[i].fd != -1)
@@ -49,18 +50,19 @@ void exit_fatal()
 	exit(1);
 }
 
-void send_buf()
+void broadcast(int bytes)
 {
 	for (int i = 1; i < arr_size; ++i)
 	{
-		return_value = send(socket_arr[i].fd, buf, strlen(buf), MSG_NOSIGNAL);
-		// if (return_value == -1)
-		// 	fprintf(logfile, "send() failed with errno: %d, %s\n", errno, strerror(errno));
-		// 	fflush(logfile);
+		ret = send(socket_arr[i].fd, send_buf, bytes, MSG_NOSIGNAL);
 	}
 
 	// Log the broadcast message without its newline
-	fprintf(logfile, "\tBroadcasted message: \"%.*s\"\n", (int)strlen(buf) - 1, buf);
+	fprintf(logfile, "\tBroadcasted message: \"");
+	if (send_buf[bytes - 1] == '\n')
+		fprintf(logfile, "%.*s\\n\"\n", bytes - 1, send_buf);
+	else
+		fprintf(logfile, "%.*s\"\n", bytes, send_buf);
 	fflush(logfile);
 }
 
@@ -69,14 +71,14 @@ void accept_client()
 	// Accept new client (address not used but required by function)
 	struct sockaddr_in client_address;
 	socklen_t addr_len = sizeof(client_address);
-	return_value = accept(socket_arr[0].fd, (struct sockaddr *)&client_address, &addr_len);
-	if (return_value == -1)
+	ret = accept(socket_arr[0].fd, (struct sockaddr *)&client_address, &addr_len);
+	if (ret == -1)
 	{
 		fprintf(logfile, "[Error] Context: accept() failed, Description: %s\n", strerror(errno));
 		fflush(logfile);
 		exit_fatal();
 	}
-	int client_fd = return_value;
+	int client_fd = ret;
 
 	// Set client id
 	int client_id = next_client_id;
@@ -111,8 +113,8 @@ void accept_client()
 	fflush(logfile);
 
 	// Prepare and send message
-	sprintf(buf, "New Client connected: %d\n", client_id);
-	send_buf();
+	ret = sprintf(send_buf, "New Client connected: %d\n", client_id);
+	broadcast(ret);
 }
 
 void handle_client(int index)
@@ -121,24 +123,21 @@ void handle_client(int index)
 	int client_fd = socket_arr[index].fd;
 	int client_id = socket_arr[index].id;
 	
-	// Before reading, add message prefix to buffer
-	int prefix_length = sprintf(buf, "Client %d says: ", client_id);
-	
 	// Read message from client
-	return_value = read(client_fd, buf + prefix_length, sizeof(buf) - prefix_length - 1);
-	if (return_value == -1)
+	ret = recv(client_fd, msg_src, sizeof(msg_src) - 1, 0);
+	if (ret == -1)
 	{
-		fprintf(logfile, "[Error] Context: read() failed, Description: %s\n", strerror(errno));
+		fprintf(logfile, "[Error] Context: recv() failed, Description: %s\n", strerror(errno));
 		fflush(logfile);
 		exit_fatal();
 	}
 	
 	// If read returns 0, client disconnected and needs to be removed
-	else if (return_value == 0)
+	else if (ret == 0)
 	{
 		// Close the socket fd
-		return_value = close(client_fd);
-		if (return_value == -1)
+		ret = close(client_fd);
+		if (ret == -1)
 		{
 			fprintf(logfile, "[Error] Context: close() failed, Description: %s\n", strerror(errno));
 			fflush(logfile);
@@ -168,20 +167,38 @@ void handle_client(int index)
 		fflush(logfile);
 
 		// Prepare and send message about disconnection
-		sprintf(buf, "Client %d disconnected\n", client_id);
-		send_buf();	
+		ret = sprintf(send_buf, "Client %d disconnected\n", client_id);
+		broadcast(ret);
 	}
 	// Otherwise, the client sent a message that needs to be broadcast
 	else
 	{
+		// Saving number of bytes read
+		int bytes_read = ret;
+
+		// Adding prefix to the message
+		int prefix_length = sprintf(send_buf, "Client %d says: ", client_id);
+		char *msg_dst = send_buf + prefix_length;
+
 		// Log for debugging
 		fprintf(logfile, "Received message from client. ID: %d, FD: %d, Message: \"%.*s\"\n",
-			client_id, client_fd, return_value, buf + prefix_length);
+			client_id, client_fd, bytes_read, msg_src);
 		fflush(logfile);
 
-		buf[prefix_length + return_value] = '\n';
-		buf[prefix_length + return_value + 1] = '\0';
-		send_buf();
+		for (int i = 0, j = 0; i < bytes_read; ++i, ++j)
+		{
+			msg_dst[j] = msg_src[i];
+			if (msg_src[i] == '\n' || i == bytes_read - 1)
+			{
+				broadcast(prefix_length  + j + 1);
+				j = -1;
+			}
+		}
+		
+		// Log for debugging
+		fprintf(logfile, "Received message from client. ID: %d, FD: %d, Message: \"%.*s\"\n",
+			client_id, client_fd, ret, send_buf + prefix_length);
+		fflush(logfile);
 	}
 }
 
@@ -190,7 +207,7 @@ int main(int argc, char *argv[])
 	// Check nbr of args
 	if (argc < 2)
 	{
-		return_value = write(2, "Wrong number of args\n", 22);
+		ret = write(2, "Wrong number of args\n", 22);
 		return 1;
 	}
 
@@ -216,8 +233,8 @@ int main(int argc, char *argv[])
 		address.sin_addr.s_addr = inet_addr("127.0.0.1");
 		address.sin_port = htons(atoi(argv[1]));
 
-		return_value = bind(listening_fd, (struct sockaddr *)&address, sizeof(address));
-		if (return_value == -1)
+		ret = bind(listening_fd, (struct sockaddr *)&address, sizeof(address));
+		if (ret == -1)
 		{
 			fprintf(logfile, "[Fatal Error] Context: bind() failed, Description: %s\n", strerror(errno));
 			fflush(logfile);
@@ -225,8 +242,8 @@ int main(int argc, char *argv[])
 		}
 
 		// Start listening
-		return_value = listen(listening_fd, 10);
-		if (return_value == -1)
+		ret = listen(listening_fd, 10);
+		if (ret == -1)
 		{
 			fprintf(logfile, "[Fatal Error] Context: listen() failed, Description: %s\n", strerror(errno));
 			fflush(logfile);
@@ -267,8 +284,8 @@ int main(int argc, char *argv[])
 	while (1)
 	{
 		// Wait until event occurs
-		return_value = poll(poll_arr, arr_size, -1);
-		if (return_value == -1)
+		ret = poll(poll_arr, arr_size, -1);
+		if (ret == -1)
 		{
 			fprintf(logfile, "[Fatal Error] Context: poll() failed, Description: %s\n", strerror(errno));
 			fflush(logfile);
