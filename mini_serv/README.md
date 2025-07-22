@@ -77,12 +77,6 @@ nc 127.0.0.1 <PORTNBR> <<EOF
 > EOF
 ```
 
-The tester will:
-1. Create 10 simultaneous client connections to port 8080
-2. Send a message from each client
-3. Close 9 connections, leaving one to receive broadcasts
-4. Log all operations to `tester.log`
-
 ## Exercise Requirements
 
 - **Single file implementation**: The entire server must be implemented in one `.c` file
