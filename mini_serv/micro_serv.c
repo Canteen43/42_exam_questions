@@ -36,11 +36,12 @@ void exit_fatal()
 	exit(1);
 }
 
-void broadcast(int bytes)
+void broadcast(int bytes, int except_index)
 {
 	for (int i = 1; i < arr_size; ++i)
 	{
-		ret = send(socket_arr[i].fd, send_buf, bytes, MSG_NOSIGNAL);
+		if (i != except_index)
+			ret = send(socket_arr[i].fd, send_buf, bytes, MSG_NOSIGNAL);
 	}
 }
 
@@ -70,7 +71,7 @@ void accept_client()
 
 	// Prepare and send message
 	ret = sprintf(send_buf, "New Client connected: %d\n", client_id);
-	broadcast(ret);
+	broadcast(ret, arr_size - 1);
 }
 
 void handle_client(int index)
@@ -97,7 +98,7 @@ void handle_client(int index)
 
 		// Prepare and send message about disconnection
 		ret = sprintf(send_buf, "Client %d disconnected\n", client_id);
-		broadcast(ret);
+		broadcast(ret, index);
 	}
 	// Otherwise, the client sent a message that needs to be broadcast
 	else
@@ -114,7 +115,7 @@ void handle_client(int index)
 			msg_dst[j] = msg_src[i];
 			if (msg_src[i] == '\n' || i == bytes_read - 1)
 			{
-				broadcast(prefix_length  + j + 1);
+				broadcast(prefix_length  + j + 1, index);
 				j = -1;
 			}
 		}
@@ -143,6 +144,8 @@ int main(int argc, char *argv[])
 		address.sin_port = htons(atoi(argv[1]));
 
 		ret = bind(listening_fd, (struct sockaddr *)&address, sizeof(address));
+		if (ret == -1)
+			exit_fatal();
 
 		// Start listening
 		ret = listen(listening_fd, 10);
